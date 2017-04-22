@@ -2,6 +2,7 @@ package com.example.wickedpuppets.beabuy;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -31,6 +32,8 @@ import com.kontakt.sdk.android.common.profile.IBeaconRegion;
 import com.kontakt.sdk.android.common.profile.IEddystoneDevice;
 import com.kontakt.sdk.android.common.profile.IEddystoneNamespace;
 import com.squareup.picasso.Picasso;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -120,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        loadPhoto();
+      //  loadPhoto();
 
         checkPermissionAndStart();
         startScanning();
@@ -156,6 +159,20 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("Sample", "IBeacon discovered: " + ibeacon.getUniqueId());
                 showToast(ibeacon.getUniqueId());
             }
+
+            @Override
+            public void onIBeaconsUpdated (List< IBeaconDevice > ibeacons, IBeaconRegion beaconRegions){
+                // when discovered beacon was not in the set proximity but it can be in the future
+                // monitor the proximity for it
+                for (IBeaconDevice ibeacon : ibeacons) {
+
+                        Log.i(TAG, "Sample " +ibeacon.toString() );
+                        showToast(ibeacon.getUniqueId());
+                    }
+
+                }
+
+
         };
     }
 
