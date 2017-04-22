@@ -15,7 +15,9 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -77,6 +79,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private ProximityManager proximityManager;
     private ImageView imageView;
+    private ImageView imageView2;
+    private ImageView imageView3;
+
+    private Button button1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,14 +91,42 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         KontaktSDK.initialize("HrIntLkGdnKSpkrrSJZpesIMXcOkUTht");
 
+
         proximityManager = ProximityManagerFactory.create(this);
         proximityManager.setIBeaconListener(createIBeaconListener());
         setFilters();
-        imageView = (ImageView) findViewById(R.id.photo);
 
+        imageView = (ImageView) findViewById(R.id.photo);
+        imageView2 = (ImageView) findViewById(R.id.photo2);
+        imageView3 = (ImageView) findViewById(R.id.photo3);
+
+
+        button1 = (Button) findViewById(R.id.button1);
+
+        Button button1 = (Button) findViewById(R.id.button1);
+        button1.setOnClickListener(new View.OnClickListener() {
+
+            TextView textView = (TextView) findViewById(R.id.productName);
+            Integer i = 0;
+            public void onClick(View v) {
+                imageView.setVisibility(View.GONE);
+                imageView2.setVisibility(View.GONE);
+                imageView3.setVisibility(View.GONE);
+//                i ++;
+
+//                if (i.equals(1)) {
+//                    loadPhoto(1);
+//                }
+//                if (i.equals(2)) {
+//                    loadPhoto(2);
+//                }
+
+                textView.setText(Integer.toString(i));
+
+            }
+        });
 
     }
-
 
 
 
@@ -195,12 +230,30 @@ public class MainActivity extends AppCompatActivity {
 //        return service;
     }
 
-    void loadPhoto() {
+    void loadPhoto(String i) {
+
+        if (i.equals("JKyi")) {
+            Picasso.with(this)
+
+                    .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
+
+                    .into(imageView);
+        }
+        if (i.equals("NO2W")) {
         Picasso.with(this)
 
                 .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
 
-                .into(imageView);
+                .into(imageView2); }
+
+        if (i.equals("ahGH")) {
+            Picasso.with(this)
+
+                    .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
+
+                    .into(imageView3); }
+
+
     }
 
     @Override
@@ -238,24 +291,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
+
     private IBeaconListener createIBeaconListener() {
         return new SimpleIBeaconListener() {
             @Override
             public void onIBeaconDiscovered(IBeaconDevice ibeacon, IBeaconRegion region) {
                 Log.i("Sample", "IBeacon discovered: " + ibeacon.getUniqueId());
                 showToast(ibeacon.getUniqueId());
+                loadPhoto(ibeacon.getUniqueId());
             }
 
             @Override
             public void onIBeaconsUpdated (List< IBeaconDevice > ibeacons, IBeaconRegion beaconRegions){
                 // when discovered beacon was not in the set proximity but it can be in the future
                 // monitor the proximity for it
+
+                Integer i =1;
                 for (IBeaconDevice ibeacon : ibeacons) {
+                    i++;
                         getClient(ibeacon.getUniqueId());
                         Log.i(TAG, "Sample " +ibeacon.toString() );
                         showToast(ibeacon.getUniqueId());
 
-//                    getClient();
+
+
+                        loadPhoto(ibeacon.getUniqueId());
+
 
 
                 }
