@@ -67,6 +67,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Toasts on device
+    private void showToast(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -74,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "onRequestPermissionsResult: 100 code");
                 //same request code as was in request permission
                 startScanning();
+                Toast.makeText(this, "AKCPETUJ TOO!!!!", Toast.LENGTH_SHORT).show();
             }
 
         } else {
@@ -111,16 +122,17 @@ public class MainActivity extends AppCompatActivity {
 
     void loadPhoto() {
         Picasso.with(this)
-                .load("https://www.google.pl/search?q=smutna+zaba&espv=2&tbm=isch&imgil=e3dxYK020bl3mM%253A%253B_7UFm3mwMbezKM%253Bhttp%25253A%25252F%25252Fwww.wykop.pl%25252Ftag%25252Fsmutnazaba%25252F&source=iu&pf=m&fir=e3dxYK020bl3mM%253A%252C_7UFm3mwMbezKM%252C_&usg=__4ckPTeYd5-XDMzexX82y7seA4cQ%3D&biw=2061&bih=1045&ved=0ahUKEwjLmMOqorjTAhUIS5oKHfSGASsQyjcIMg&ei=2Gf7WMvMJIiW6QT0jYbYAg#imgrc=e3dxYK020bl3mM:")
+                .load("http://www.borbis.pl/wp-content/uploads/mem-fresk.jpg")
                 .into(imageView);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        checkPermissionAndStart();
         loadPhoto();
-        //startScanning();
+        checkPermissionAndStart();
+        //loadPhoto();
+        startScanning();
     }
 
     @Override
@@ -150,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
         return new SimpleIBeaconListener() {
             @Override
             public void onIBeaconDiscovered(IBeaconDevice ibeacon, IBeaconRegion region) {
-                Log.i("Sample", "IBeacon discovered: " + ibeacon.toString());
+                Log.i("Sample", "IBeacon discovered: " + ibeacon.getUniqueId());
+                showToast(ibeacon.getUniqueId());
             }
         };
     }
