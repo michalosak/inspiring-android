@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.kontakt.sdk.android.ble.connection.OnServiceReadyListener;
+import com.kontakt.sdk.android.ble.filter.ibeacon.IBeaconFilter;
 import com.kontakt.sdk.android.ble.manager.ProximityManager;
 import com.kontakt.sdk.android.ble.manager.ProximityManagerFactory;
 import com.kontakt.sdk.android.ble.manager.listeners.EddystoneListener;
@@ -43,11 +44,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         KontaktSDK.initialize("HrIntLkGdnKSpkrrSJZpesIMXcOkUTht");
 
-        imageView = (ImageView) findViewById(R.id.photo);
-
         proximityManager = ProximityManagerFactory.create(this);
         proximityManager.setIBeaconListener(createIBeaconListener());
-        proximityManager.setEddystoneListener(createEddystoneListener());
+        setFilters();
+        imageView = (ImageView) findViewById(R.id.photo);
+
+
     }
 
 
@@ -95,34 +97,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //@Override
-//public void onRequestPermissionsResult(int requestCode,
-//                                       String permissions[], int[] grantResults) {
-//    switch (requestCode) {
-//        case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
-//            // If request is cancelled, the result arrays are empty.
-//            if (grantResults.length > 0
-//                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//
-//                // permission was granted, yay! Do the
-//                // contacts-related task you need to do.
-//
-//            } else {
-//
-//                // permission denied, boo! Disable the
-//                // functionality that depends on this permission.
-//            }
-//            return;
-//        }
-//
-//        // other 'case' lines to check for other
-//        // permissions this app might request
-//    }
-//}
+    private void setFilters() {
+        IBeaconFilter customIBeaconFilter = new IBeaconFilter() {
+            @Override
+            public boolean apply(IBeaconDevice iBeaconDevice) {
+                // So here we set the max distance from a beacon to 1m
+                return iBeaconDevice.getDistance() < 1;
+            }
+        };
+
+        proximityManager.filters().iBeaconFilter(customIBeaconFilter);
+    }
 
     void loadPhoto() {
         Picasso.with(this)
-                .load("http://www.borbis.pl/wp-content/uploads/mem-fresk.jpg")
+
+                .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
+
                 .into(imageView);
     }
 
@@ -130,8 +121,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         loadPhoto();
+
         checkPermissionAndStart();
-        //loadPhoto();
         startScanning();
     }
 
