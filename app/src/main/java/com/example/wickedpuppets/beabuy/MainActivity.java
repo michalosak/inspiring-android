@@ -33,7 +33,39 @@ import com.kontakt.sdk.android.common.profile.IEddystoneDevice;
 import com.kontakt.sdk.android.common.profile.IEddystoneNamespace;
 import com.squareup.picasso.Picasso;
 
+import java.io.IOException;
 import java.util.List;
+
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+
+
+interface APIInterface {
+
+    @POST("/test")
+    Call<String> getStringScalar();
+
+    @POST("/receive")
+    Call<String> postBeaconInfo(@Body BeaconInfo info);
+
+}
+
+//public interface ScalarService {
+//    @POST("path")
+//    Call<String> getStringScalar(@Body String body);
+//}
+
+
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+
 
 
     private void checkPermissionAndStart() {
@@ -100,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+
     private void setFilters() {
         IBeaconFilter customIBeaconFilter = new IBeaconFilter() {
             @Override
@@ -110,6 +146,52 @@ public class MainActivity extends AppCompatActivity {
         };
 
         proximityManager.filters().iBeaconFilter(customIBeaconFilter);
+    }
+
+    private static Retrofit retrofit = null;
+
+
+    static void getClient(String beaconUUID) {
+
+        Log.d("RETROFIT", "getClient: called");
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+
+                .baseUrl("http://192.170.20.98:5000")
+                .build();
+
+//        retrofit = new Retrofit.Builder()
+//                .baseUrl("http://192.170.20.98:5000")
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .client(client)
+//                .build();
+
+        BeaconInfo info = new BeaconInfo();
+        info.beacon = beaconUUID;
+        info.mail = "test2@mail.com";
+        Call<String> postBeaconInfo = retrofit.create(APIInterface.class).postBeaconInfo(info);
+
+        postBeaconInfo.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+//                Toast.makeText(, "API Response: " + response.body(), Toast.LENGTH_LONG).show();
+                Log.d("RETROFIT", "onResponse: body = " + response.body());
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+//                Toast.makeText(this, "API FAILED!!! ", Toast.LENGTH_LONG).show();
+                Log.e("RETROFIT", "onFailure: FAILED TO SEND REQUEST");
+            }
+        });
+
+//        return service;
     }
 
     void loadPhoto() {
@@ -125,9 +207,12 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
       //  loadPhoto();
 
+
+
         checkPermissionAndStart();
         startScanning();
     }
+
 
     @Override
     protected void onStop() {
@@ -165,10 +250,14 @@ public class MainActivity extends AppCompatActivity {
                 // when discovered beacon was not in the set proximity but it can be in the future
                 // monitor the proximity for it
                 for (IBeaconDevice ibeacon : ibeacons) {
-
+                        getClient(ibeacon.getUniqueId());
                         Log.i(TAG, "Sample " +ibeacon.toString() );
                         showToast(ibeacon.getUniqueId());
-                    }
+
+//                    getClient();
+
+
+                }
 
                 }
 
