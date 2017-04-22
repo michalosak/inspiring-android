@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.kontakt.sdk.android.ble.connection.OnServiceReadyListener;
 import com.kontakt.sdk.android.ble.filter.ibeacon.IBeaconFilter;
 import com.kontakt.sdk.android.ble.manager.ProximityManager;
@@ -45,6 +46,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 import retrofit2.http.Body;
+import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
 
@@ -54,9 +56,12 @@ interface APIInterface {
     @POST("/test")
     Call<String> getStringScalar();
 
+//    @POST("/receive")
+//    Call<String> postBeaconInfo(@Body BeaconInfo info);
+
+
     @POST("/receive")
     Call<String> postBeaconInfo(@Body BeaconInfo info);
-
 }
 
 //public interface ScalarService {
@@ -162,15 +167,10 @@ public class MainActivity extends AppCompatActivity {
         Retrofit retrofit = new Retrofit.Builder()
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
-
+                .client(client)
                 .baseUrl("http://192.170.20.98:5000")
                 .build();
 
-//        retrofit = new Retrofit.Builder()
-//                .baseUrl("http://192.170.20.98:5000")
-//                .addConverterFactory(GsonConverterFactory.create())
-//                .client(client)
-//                .build();
 
         BeaconInfo info = new BeaconInfo();
         info.beacon = beaconUUID;
@@ -182,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<String> call, Response<String> response) {
 //                Toast.makeText(, "API Response: " + response.body(), Toast.LENGTH_LONG).show();
                 Log.d("RETROFIT", "onResponse: body = " + response.body());
+                Log.d("MainActivity", "response = " + new Gson().toJson( response.body()));
             }
 
             @Override
