@@ -1,26 +1,20 @@
 package com.example.wickedpuppets.beabuy;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
+import com.example.wickedpuppets.beabuy.interfaces.RetroFitInterface;
 import com.kontakt.sdk.android.ble.connection.OnServiceReadyListener;
 import com.kontakt.sdk.android.ble.filter.ibeacon.IBeaconFilter;
 import com.kontakt.sdk.android.ble.manager.ProximityManager;
@@ -34,10 +28,16 @@ import com.kontakt.sdk.android.common.profile.IBeaconDevice;
 import com.kontakt.sdk.android.common.profile.IBeaconRegion;
 import com.kontakt.sdk.android.common.profile.IEddystoneDevice;
 import com.kontakt.sdk.android.common.profile.IEddystoneNamespace;
-import com.squareup.picasso.Picasso;
 
-import java.io.IOException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -48,86 +48,45 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 import retrofit2.http.Body;
-import retrofit2.http.FormUrlEncoded;
-import retrofit2.http.GET;
 import retrofit2.http.POST;
-
-
-interface APIInterface {
-
-    @POST("/test")
-    Call<String> getStringScalar();
-
-//    @POST("/receive")
-//    Call<String> postBeaconInfo(@Body BeaconInfo info);
-
-
-    @POST("/receive")
-    Call<String> postBeaconInfo(@Body BeaconInfo info);
-}
-
-//public interface ScalarService {
-//    @POST("path")
-//    Call<String> getStringScalar(@Body String body);
-//}
 
 
 
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String host = "http://192.168.1.83:8080/";
+//    private static final String host = "http://localhosst:8080/";
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static User user = new User();
     private ProximityManager proximityManager;
-    private ImageView imageView;
-    private ImageView imageView2;
-    private ImageView imageView3;
-
-    private Button button1;
+    private Context context;
+    private Button send;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.context = this;
+        prepareRetrofit();
         setContentView(R.layout.activity_main);
         KontaktSDK.initialize("HrIntLkGdnKSpkrrSJZpesIMXcOkUTht");
-
-
-        proximityManager = ProximityManagerFactory.create(this);
+        send = (Button) findViewById(R.id.send);
+        proximityManager = ProximityManagerFactory.create(context);
         proximityManager.setIBeaconListener(createIBeaconListener());
         setFilters();
+        send.setOnClickListener(new View.OnClickListener() {
 
-        imageView = (ImageView) findViewById(R.id.photo);
-        imageView2 = (ImageView) findViewById(R.id.photo2);
-        imageView3 = (ImageView) findViewById(R.id.photo3);
-
-
-        button1 = (Button) findViewById(R.id.button1);
-
-        Button button1 = (Button) findViewById(R.id.button1);
-        button1.setOnClickListener(new View.OnClickListener() {
-
-            TextView textView = (TextView) findViewById(R.id.productName);
-            Integer i = 0;
-            public void onClick(View v) {
-                imageView.setVisibility(View.GONE);
-                imageView2.setVisibility(View.GONE);
-                imageView3.setVisibility(View.GONE);
-//                i ++;
-
-//                if (i.equals(1)) {
-//                    loadPhoto(1);
-//                }
-//                if (i.equals(2)) {
-//                    loadPhoto(2);
-//                }
-
-                textView.setText(Integer.toString(i));
+            public void onClick(View view) {
+                Log.i("CLICK_SEND", "OK");
+                EditText name = (EditText) findViewById(R.id.inputName);
+                user.setName(name.getText().toString());
+                sendUser(host + "users/add/");
 
             }
+
         });
-
     }
-
 
 
     private void checkPermissionAndStart() {
@@ -175,7 +134,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private void setFilters() {
         IBeaconFilter customIBeaconFilter = new IBeaconFilter() {
             @Override
@@ -190,38 +148,62 @@ public class MainActivity extends AppCompatActivity {
 
     private static Retrofit retrofit = null;
 
-
-    static void getClient(String beaconUUID) {
-
-        Log.d("RETROFIT", "getClient: called");
+    static Retrofit prepareRetrofit() {
+        Log.d("RETROFIT", "sendBeacon: called");
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
 
-        Retrofit retrofit = new Retrofit.Builder()
+        return retrofit = new Retrofit.Builder()
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(client)
-                .baseUrl("http://192.170.20.98:5000")
+                .baseUrl(host)
                 .build();
+    }
+
+    void setBaseUrl(String url) {
+        retrofit.baseUrl().newBuilder(url).build();
+    }
+
+    void sendUser(String url) {
+
+        setBaseUrl(url);
+        Call<JSONObject> postUser = retrofit.create(RetroFitInterface.class).postUser(user);
+        postUser.enqueue(new Callback<JSONObject>() {
 
 
-        BeaconInfo info = new BeaconInfo();
-        info.beacon = beaconUUID;
-        info.mail = "test2@mail.com";
-        Call<String> postBeaconInfo = retrofit.create(APIInterface.class).postBeaconInfo(info);
-
-        postBeaconInfo.enqueue(new Callback<String>() {
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
-//                Toast.makeText(, "API Response: " + response.body(), Toast.LENGTH_LONG).show();
-                Log.d("RETROFIT", "onResponse: body = " + response.body());
-                Log.d("MainActivity", "response = " + new Gson().toJson( response.body()));
+            public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
+                JSONObject bodyResponse = response.body();
             }
 
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
+            public void onFailure(Call<JSONObject> call, Throwable t) {
+                Log.e("RETROFIT", "onFailure: FAILED TO SEND REQUEST");
+            }
+        });
+    }
+
+    void sendBeacon(String beaconUUID, String url) {
+        setBaseUrl(url);
+        Beacon info = new Beacon();
+        info.setBeaconId(beaconUUID);
+        info.setUser(user.getName());
+        Call<JSONObject> postBeaconInfo = MainActivity.retrofit.create(RetroFitInterface.class).postBeaconInfo(info);
+
+        postBeaconInfo.enqueue(new Callback<JSONObject>() {
+            @Override
+            public void onResponse(Call<JSONObject> call, Response<JSONObject> response) {
+//
+
+                JSONObject bodyResponse = response.body();
+
+            }
+
+            @Override
+            public void onFailure(Call<JSONObject> call, Throwable t) {
 //                Toast.makeText(this, "API FAILED!!! ", Toast.LENGTH_LONG).show();
                 Log.e("RETROFIT", "onFailure: FAILED TO SEND REQUEST");
             }
@@ -230,39 +212,10 @@ public class MainActivity extends AppCompatActivity {
 //        return service;
     }
 
-    void loadPhoto(String i) {
-
-        if (i.equals("JKyi")) {
-            Picasso.with(this)
-
-                    .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
-
-                    .into(imageView);
-        }
-        if (i.equals("NO2W")) {
-        Picasso.with(this)
-
-                .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
-
-                .into(imageView2); }
-
-        if (i.equals("ahGH")) {
-            Picasso.with(this)
-
-                    .load("http://x3.wykop.pl/cdn/c3201142/comment_cIqwDFW1DRwypsz6B2k4sfs4VQ06FbJp.jpg")
-
-                    .into(imageView3); }
-
-
-    }
 
     @Override
     protected void onStart() {
         super.onStart();
-      //  loadPhoto();
-
-
-
         checkPermissionAndStart();
         startScanning();
     }
@@ -292,37 +245,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private IBeaconListener createIBeaconListener() {
         return new SimpleIBeaconListener() {
             @Override
             public void onIBeaconDiscovered(IBeaconDevice ibeacon, IBeaconRegion region) {
                 Log.i("Sample", "IBeacon discovered: " + ibeacon.getUniqueId());
                 showToast(ibeacon.getUniqueId());
-                loadPhoto(ibeacon.getUniqueId());
+                Log.i("USERNAME", user.getName());
+                if (ibeacon.getUniqueId() != null && !user.getName().isEmpty()) {
+                    sendBeacon(ibeacon.getUniqueId(), host + " beacons/");
+                    Log.i("ON UPDATED", " " + ibeacon.toString());
+                    showToast(ibeacon.getUniqueId());
+                }
             }
 
             @Override
-            public void onIBeaconsUpdated (List< IBeaconDevice > ibeacons, IBeaconRegion beaconRegions){
+            public void onIBeaconsUpdated(List<IBeaconDevice> ibeacons, IBeaconRegion beaconRegions) {
                 // when discovered beacon was not in the set proximity but it can be in the future
                 // monitor the proximity for it
 
-                Integer i =1;
+                Integer i = 1;
                 for (IBeaconDevice ibeacon : ibeacons) {
-                    i++;
-                        getClient(ibeacon.getUniqueId());
-                        Log.i(TAG, "Sample " +ibeacon.toString() );
+                    if (ibeacon.getUniqueId() != null && !user.getName().isEmpty()) {
+                        i++;
+                        sendBeacon(ibeacon.getUniqueId(), host + " beacons/");
+                        Log.i("ON UPDATED", " " + ibeacon.toString());
                         showToast(ibeacon.getUniqueId());
-
-
-
-                        loadPhoto(ibeacon.getUniqueId());
-
-
-
+                    }
                 }
 
-                }
+            }
 
 
         };
@@ -336,4 +288,48 @@ public class MainActivity extends AppCompatActivity {
             }
         };
     }
+
+
+    public static Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
+        Map<String, Object> retMap = new HashMap<String, Object>();
+
+        if (json != JSONObject.NULL) {
+            retMap = toMap(json);
+        }
+        return retMap;
+    }
+
+    public static Map<String, Object> toMap(JSONObject object) throws JSONException {
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        Iterator<String> keysItr = object.keys();
+        while (keysItr.hasNext()) {
+            String key = keysItr.next();
+            Object value = object.get(key);
+
+            if (value instanceof JSONArray) {
+                value = toList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = toMap((JSONObject) value);
+            }
+            map.put(key, value);
+        }
+        return map;
+    }
+
+    public static List<Object> toList(JSONArray array) throws JSONException {
+        List<Object> list = new ArrayList<Object>();
+        for (int i = 0; i < array.length(); i++) {
+            Object value = array.get(i);
+            if (value instanceof JSONArray) {
+                value = toList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = toMap((JSONObject) value);
+            }
+            list.add(value);
+        }
+        return list;
+    }
+
+
 }
